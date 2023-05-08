@@ -1,0 +1,87 @@
+title Output spreadsheet
+
+actor Command
+
+==Transaction: Overview of all customers with total revenue in a year and bought KWH per period (maand,jaar,etc) ==
+
+Command->Backend Controler: get customer overview 
+Backend Controler->Services:request customer and yield data
+
+Services->Repository:get data
+Repository->Entity:get data
+
+database Database
+
+Entity->Database: get data
+Database ->Entity: return data
+Entity ->Repository: data
+Repository ->Services:data
+Services ->Backend Controler:data
+
+Backend Controler->Backend Controler:proces data
+Backend Controler ->Backend Controler: format spreadsheet
+
+Backend Controler->Command: return spreadsheet
+
+
+database Database
+
+space 
+
+== transaction: Overview of total revenue of curren year with a trendline based on results in the past ==
+
+actor Command
+
+
+Command->Backend Controler:get revenue overview 
+Backend Controler->Services:request yield data
+Services->Repository:get data
+Repository->Entity:get data
+
+database Database
+
+Entity->Database: get data
+Database ->Entity: return data
+Entity ->Repository: data
+Repository ->Services:data
+Services ->Backend Controler:data
+
+Backend Controler->Backend Controler:proces data
+Backend Controler ->Backend Controler: format spreadsheet
+
+Backend Controler->Command: return spreadsheet
+
+
+database Database
+
+space 
+
+== Overview of total revenue, total energie yield and total surplus per municipality ==
+
+actor Command
+
+
+Command->Backend Controler:get revenue overview 
+Backend Controler->Services:request customer and yield data
+Services->Repository:get data
+Repository->Entity:get data
+
+database Database
+
+Entity->Database: get data
+Database ->Entity: return data
+Entity ->Repository: data
+Repository ->Services:data
+Services ->Backend Controler:data
+
+Backend Controler->Backend Controler:proces data
+Backend Controler ->Backend Controler: format spreadsheet
+
+Backend Controler->Command: return spreadsheet
+
+
+database Database
+
+space 
+
+====

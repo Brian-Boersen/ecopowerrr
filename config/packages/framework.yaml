@@ -1,5 +1,11 @@
 # see https://symfony.com/doc/current/reference/configuration/framework.html
 framework:
+    http_client:
+        scoped_clients:
+            example_api:
+                base_uri: 'https://postcode.tech/api/v1/postcode/full?'
+                auth_bearer: the-bearer-token
+
     secret: '%env(APP_SECRET)%'
     #csrf_protection: true
     http_method_override: false

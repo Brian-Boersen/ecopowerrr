@@ -1,0 +1,27 @@
+title add customer
+
+actor Adviser
+
+==Transaction: add customer ==
+
+Adviser->Front End: adding new customer 
+Front End->Backend Controler: sends customer data with only postcode and house number
+Backend Controler->postcode.tech:send postcode with house number
+postcode.tech->Backend Controler: return adress
+Backend Controler->Backend Controler:process data
+Backend Controler->Services:compiled data
+Services->Repository:data
+Repository->Entity:data
+Entity->Database: save customer
+Database-->>Backend Controler:
+database Customer device
+Backend Controler->Customer device: set status to active 
+Backend Controler->Backend Controler:<read and process data>
+
+
+database Database
+
+space 
+
+====
+

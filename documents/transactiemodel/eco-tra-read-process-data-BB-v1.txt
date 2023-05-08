@@ -1,0 +1,31 @@
+title read and process data
+
+database Customer device
+
+==Transaction: add customer ==
+
+Backend Controler->Services:get customers
+Services->Repository:get costumers
+Repository->Entity:get customers
+Entity->Database:request customers
+Entity<-Database:return customers
+Repository<-Entity:return customers
+Services<<-Repository:return customers
+Backend Controler<<-Services:return customers
+Backend Controler->Customer device:request data (if active)
+Customer device ->Backend Controler: device data
+
+Backend Controler->Backend Controler:process data
+Backend Controler->Services:processed data
+Services->Repository:data
+Repository->Entity:data
+Entity->Database: save device data
+
+
+
+database Database
+
+space 
+
+====
+
