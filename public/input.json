@@ -1,0 +1,29 @@
+[
+    {
+      "_id": "12345",
+      "message_id": "5638545950",
+      "device_id": "7519414114",
+      "device_status": "active",
+      "date": "8/5/2023",
+      "devices": [
+        {
+          "serial_number": "9527974966",
+          "device_type": "solar",
+          "device_status": "active",
+          "device_total_yield": "678.97kWh",
+          "device_month_yield": "62.83kWh",
+          "device_total_surpuls": "69.85kWh",
+          "device_month_surplus": "24.95kWh"
+        },
+        {
+          "serial_number": "8815128850",
+          "device_type": "solar",
+          "device_status": "active",
+          "device_total_yield": "667.5kWh",
+          "device_month_yield": "73.67kWh",
+          "device_total_surpuls": "727.38kWh",
+          "device_month_surplus": "69.12kWh"
+        }
+      ]
+    }
+  ]

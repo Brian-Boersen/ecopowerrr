@@ -7,6 +7,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 use ApiPlatform\Metadata\ApiResource;
+use App\Entity\Customer;
 
 /**
  * @extends ServiceEntityRepository<Contract>
@@ -28,8 +29,16 @@ class ContractRepository extends ServiceEntityRepository
         return "test";
     }
 
-    public function save(Contract $entity, bool $flush = false): void
+    public function save(array $data, Customer $customer, bool $flush = true): void
     {
+        $entity =  new Contract();
+
+        $entity->setCustomer($customer);
+        $entity->setStartDate(new \DateTime($data['contractStartDate']));
+        $entity->setEndDate(new \DateTime($data['contractEndDate']));
+        $entity->setSellPrice($data['buyPrice']);
+        $entity->setBuyPrice($data['sellPrice']);
+        
         $this->getEntityManager()->persist($entity);
 
         if ($flush) {

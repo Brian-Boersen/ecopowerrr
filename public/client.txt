@@ -1,0 +1,16 @@
+Array
+(
+    [email] => fake@mail
+    [phonenumber] => 1234
+    [postcode] => 1567bd
+    [city] => Assendelft
+    [street] => Krommeven
+    [firstName] => mick
+    [lastName] => de muis
+    [houseNumber] => 32
+    [bankAccount] => rabo 1234
+    [contractStartDate] => 01/03/2023
+    [contractEndDate] => 01/03/2024
+    [buyPrice] => 141
+    [sellPrice] => 23
+)

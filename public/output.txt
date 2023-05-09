@@ -1,0 +1,13 @@
+App\Entity\Customer Object
+(
+    [id:App\Entity\Customer:private] => 68
+    [first_name:App\Entity\Customer:private] => mick
+    [last_name:App\Entity\Customer:private] => de muis
+    [email:App\Entity\Customer:private] => fake@mail
+    [phonenumber:App\Entity\Customer:private] => 1234
+    [postcode:App\Entity\Customer:private] => 1567bd
+    [city:App\Entity\Customer:private] => Assendelft
+    [street:App\Entity\Customer:private] => Krommeven
+    [house_number:App\Entity\Customer:private] => 32
+    [bank_account:App\Entity\Customer:private] => rabo 1234
+)

@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Controller;
+namespace App\Services;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -12,12 +11,10 @@ use App\Repository\DevicesRepository;
 use App\Repository\CustomerRepository;
 use App\Repository\MothlyYieldRepository;
 use App\Entity\Customer;
-use App\Entity\MothlyYield;
+use Symfony\Component\Serializer\Encoder\JsonDecode;
 
-#[Route('/solar')]
-class SolarDataCollectorController extends AbstractController
+class SolarDataCollectorService
 {
-
     public function __construct
     (
         private HttpClientInterface $client,
@@ -30,26 +27,30 @@ class SolarDataCollectorController extends AbstractController
     
     public function ReadNewDevice(Customer $customer)
     {
-        $response = $this->client->request(
-            'GET',
-            'http://localhost:70/fetch_data'
-        ); 
+        $res = $this->FetchData();
 
-        $data = $response->toArray();
+        $data = $res->toArray()[0];
 
         $deviceData = [
-            'device_id' => $data[0]['device_id'],
-            'device_status' => $data[0]['device_status'],
+            'device_id' => $data['device_id'],
+            'device_status' => $data['device_status'],
             'customer' => $customer,
-            'type' => count($data[0]['devices'])
+            'type' => count($data['devices'])
         ];
-
+        
         $newDevice =  $this->devicesRepository->save($deviceData, $customer);
 
-        $this->mothlyYieldRepository->save($data[0], $newDevice);    
+        $this->mothlyYieldRepository->save($data, $newDevice);    
 
         return $data;
+    }
 
+    private function FetchData($postcode = '1567bd',$num = '32')
+    {
+        return $this->client->request(
+            'GET',
+            "http://localhost:70/fetch_data/$postcode/$num"
+        ); 
     }
 
     #[Route('/colect-data/{id}', name:'Solar-Data-Collecter', methods: ['GET'])]

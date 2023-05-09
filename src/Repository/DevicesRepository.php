@@ -28,7 +28,7 @@ class DevicesRepository extends ServiceEntityRepository
 
 
         $entity->setCustomer($customer);
-        $entity->setSerialNumber(intval($data['device_id']));
+        $entity->setSerialNumber($data['device_id']);
         $entity->setStatus($data['device_status']);
         $entity->setType($data['type']);
 

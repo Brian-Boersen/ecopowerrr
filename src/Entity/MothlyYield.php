@@ -21,7 +21,7 @@ class MothlyYield
     private ?devices $device = null;
 
     #[ORM\Column]
-    private ?int $serial_number = null;
+    private ?string $serial_number = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $start_date = null;
@@ -52,12 +52,12 @@ class MothlyYield
         return $this;
     }
 
-    public function getSerialNumber(): ?int
+    public function getSerialNumber(): ?string
     {
         return $this->serial_number;
     }
 
-    public function setSerialNumber(int $serial_number): self
+    public function setSerialNumber(string $serial_number): self
     {
         $this->serial_number = $serial_number;
 

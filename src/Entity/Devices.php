@@ -20,7 +20,7 @@ class Devices
     private ?customer $customer = null;
 
     #[ORM\Column]
-    private ?int $serial_number = null;
+    private ?string $serial_number = null;
 
     #[ORM\Column(length: 12)]
     private ?string $status = null;
@@ -45,12 +45,12 @@ class Devices
         return $this;
     }
 
-    public function getSerialNumber(): ?int
+    public function getSerialNumber(): ?string
     {
         return $this->serial_number;
     }
 
-    public function setSerialNumber(int $serial_number): self
+    public function setSerialNumber(string $serial_number): self
     {
         $this->serial_number = $serial_number;
 
