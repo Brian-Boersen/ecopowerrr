@@ -44,6 +44,11 @@ class CustomerRegistrationService
 
         $adress = $this->GetAdress($data['postcode'],$data['houseNumber']);
 
+        if($adress['city'] == null)
+        {
+            return null;
+        }
+
         $data['city'] = $adress['city'];
         $data['street'] = $adress['street'];
         $data['province'] = $adress['province'];

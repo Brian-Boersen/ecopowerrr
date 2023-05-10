@@ -42,6 +42,9 @@ class Customer
     #[ORM\Column(length: 40)]
     private ?string $bank_account = null;
 
+    #[ORM\Column(length: 30)]
+    private ?string $province = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -151,6 +154,18 @@ class Customer
     public function setBankAccount(string $bank_account): self
     {
         $this->bank_account = $bank_account;
+
+        return $this;
+    }
+
+    public function getProvince(): ?string
+    {
+        return $this->province;
+    }
+
+    public function setProvince(string $province): self
+    {
+        $this->province = $province;
 
         return $this;
     }

@@ -45,33 +45,53 @@ class SolarDataCollectorService
         return $data;
     }
 
-    private function FetchData($postcode = '1567bd',$num = '32')
-    {
-        return $this->client->request(
-            'GET',
-            "http://localhost:70/fetch_data/$postcode/$num"
-        ); 
+    public function ReadAllDevices()
+    {   
+        $Devices = $this->devicesRepository->findAll(); 
+    
+        for($i = 0; $i < 6; $i++)
+        {
+            foreach($Devices as $device)
+            {
+                $res = $this->FetchData($device->getSerialNumber());
+                $data = $res->toArray()[0];
+                
+                $this->mothlyYieldRepository->save($data, $device);          
+            }
+        }
     }
 
-    #[Route('/colect-data/{id}', name:'Solar-Data-Collecter', methods: ['GET'])]
-    public function ReadDevices($id,Request $request):Response
+    private function FetchData($id = "")
     {
-        $response = $this->client->request(
+        ($id == "")? $id = "":$id = "/$id";
+
+        $data =  $this->client->request(
             'GET',
-            'http://localhost:70/fetch_data'
-        ); 
-
-        $data = $response->toArray();
-
-        $deviceData = [
-            'device_id' => $data[0]['device_id'],
-            'device_status' => $data[0]['device_status'],
-            'customer' => 1,
-            'type' => count($data[0]['devices'])
-        ];
-
-        $this->devicesRepository->save($deviceData);
+            "http://localhost:70/fetch_data$id"
+        );
         
-        return new Response(json_encode($deviceData));
+        return $data;
     }
+
+    // #[Route('/colect-data/{id}', name:'Solar-Data-Collecter', methods: ['GET'])]
+    // public function ReadDevices($id,Request $request):Response
+    // {
+    //     $response = $this->client->request(
+    //         'GET',
+    //         'http://localhost:70/fetch_data'
+    //     ); 
+
+    //     $data = $response->toArray();
+
+    //     $deviceData = [
+    //         'device_id' => $data[0]['device_id'],
+    //         'device_status' => $data[0]['device_status'],
+    //         'customer' => 1,
+    //         'type' => count($data[0]['devices'])
+    //     ];
+
+    //     $this->devicesRepository->save($deviceData);
+        
+    //     return new Response(json_encode($deviceData));
+    // }
 }

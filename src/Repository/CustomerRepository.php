@@ -36,6 +36,8 @@ class CustomerRepository extends ServiceEntityRepository
 
         $entity->setPostcode($data['postcode']);
         $entity->setCity($data['city']);
+        $entity->setProvince($data['province']);
+
         $entity->setStreet($data['street']);
         $entity->setHouseNumber($data['houseNumber']);
 

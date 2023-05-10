@@ -32,6 +32,11 @@ class CustomerRegistrationController extends AbstractController
 
         $result = $this->customerRegisionService->saveData($data);
 
+        if($result == null)
+        {
+            return new Response(json_encode(['error' => 'invalid postcode or house number']));
+        }
+        
         return new Response(json_encode($result));
     } 
 }

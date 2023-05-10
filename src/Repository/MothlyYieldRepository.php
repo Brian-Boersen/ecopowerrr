@@ -24,11 +24,37 @@ class MothlyYieldRepository extends ServiceEntityRepository
 
     public function save(array $data,Devices $dev, bool $flush = true)
     {
-        $devicesMonthlyYield = $this->findBy([
-            'device' => $dev]);
-            
+        $splitDate = explode("/", $data['date']);
+
+        $deviceDate = new \DateTime($splitDate[2].'-'.$splitDate[1].'-'.$splitDate[0]);
+        
+        $deviceEndDate = new \DateTime($splitDate[2].'-'.$splitDate[1].'-'.$splitDate[0]);
+        $deviceEndDate->modify('+1 year');
+        
+        $deviceDays =  $deviceDate->format('j');
+        $deviceDate->modify('-'.($deviceDays - 1).' days');
+
         foreach($data['devices'] as $device)
         {
+            $devicesMonthlyYield = $this->findBy(['serial_number' => $device['serial_number']]);
+
+            // print_r("date: ".$data['date'] . "\n");
+            // print_r($splitDate[0].'-'.$splitDate[1].'-'.$splitDate[2] . "\n");
+            // print_r("device date: " . $deviceDate->format('Y-m-d') . "\n");
+            // print_r("device end date: " . $deviceEndDate->format('Y-m-d') . "\n");
+
+            foreach($devicesMonthlyYield as $deviceMonthlyYield)
+            {
+                // print_r("db_Device date: " . $deviceMonthlyYield->getStartDate()->format('Y-m-d') . "\n");
+                if($deviceMonthlyYield->getStartDate()->format('Y-m-d') == $deviceDate->format('Y-m-d'))
+                {
+                    print_r("failed at itaration" . "\n");
+                    continue;
+                }
+            }
+
+            print_r("device id: " . $dev->getId() . "\n");
+
             $entity = new MothlyYield();
 
             $entity->setDevice($dev);
@@ -36,27 +62,10 @@ class MothlyYieldRepository extends ServiceEntityRepository
 
             $entity->setYield(floatval($device['device_month_yield']));
             $entity->setSurplus(floatval($device['device_month_surplus']));
-
-            $deviceDate = new \DateTime($data['date']);
-            $deviceDays =  $deviceDate->format('j');
-            $deviceMonth = $deviceDate->format('m');
             
-            $entity->setEndDate($deviceDate);
-            $entity->setStartDate($deviceDate->modify('-'.($deviceDays - 1).' days'));
+            $entity->setStartDate($deviceDate);
+            $entity->setEndDate($deviceEndDate);
 
-            if($devicesMonthlyYield != null)
-            {
-                foreach($devicesMonthlyYield as $deviceMonthYield )
-                {
-                    $storedDeviceMonth = $deviceMonthYield->getStartDate()->format('m');
-                    
-                    if($storedDeviceMonth == $deviceMonth)
-                    {   
-                        $entity->setStartDate($deviceMonthYield->getStartDate());
-                    }
-                }
-            }
-            
             $this->getEntityManager()->persist($entity);
 
             if ($flush) {
