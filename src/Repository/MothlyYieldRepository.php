@@ -38,14 +38,8 @@ class MothlyYieldRepository extends ServiceEntityRepository
         {
             $devicesMonthlyYield = $this->findBy(['serial_number' => $device['serial_number']]);
 
-            // print_r("date: ".$data['date'] . "\n");
-            // print_r($splitDate[0].'-'.$splitDate[1].'-'.$splitDate[2] . "\n");
-            // print_r("device date: " . $deviceDate->format('Y-m-d') . "\n");
-            // print_r("device end date: " . $deviceEndDate->format('Y-m-d') . "\n");
-
             foreach($devicesMonthlyYield as $deviceMonthlyYield)
             {
-                // print_r("db_Device date: " . $deviceMonthlyYield->getStartDate()->format('Y-m-d') . "\n");
                 if($deviceMonthlyYield->getStartDate()->format('Y-m-d') == $deviceDate->format('Y-m-d'))
                 {
                     print_r("failed at itaration" . "\n");
@@ -55,16 +49,7 @@ class MothlyYieldRepository extends ServiceEntityRepository
 
             print_r("device id: " . $dev->getId() . "\n");
 
-            $entity = new MothlyYield();
-
-            $entity->setDevice($dev);
-            $entity->setSerialNumber(($device['serial_number']));
-
-            $entity->setYield(floatval($device['device_month_yield']));
-            $entity->setSurplus(floatval($device['device_month_surplus']));
-            
-            $entity->setStartDate($deviceDate);
-            $entity->setEndDate($deviceEndDate);
+            $entity = $this->makeEntety($dev,$device,$deviceDate,$deviceEndDate);
 
             $this->getEntityManager()->persist($entity);
 
@@ -72,6 +57,23 @@ class MothlyYieldRepository extends ServiceEntityRepository
                 $this->getEntityManager()->flush();
             }
         }
+    }
+
+    private function makeEntety($dev,$device,$deviceDate,$deviceEndDate): MothlyYield
+    {
+        $entity = new MothlyYield();
+
+        $entity->setDevice($dev);
+        $entity->setSerialNumber(($device['serial_number']));
+
+        $entity->setYield(floatval($device['device_month_yield']));
+        $entity->setSurplus(floatval($device['device_month_surplus']));
+        
+        $entity->setStartDate($deviceDate);
+        $entity->setEndDate($deviceEndDate);
+
+        $this->getEntityManager()->persist($entity);
+        return $entity;
     }
 
     public function remove(MothlyYield $entity, bool $flush = false): void

@@ -46,18 +46,24 @@ class SolarDataCollectorService
     }
 
     public function ReadAllDevices()
-    {   
+    {
+        
         $Devices = $this->devicesRepository->findAll(); 
-    
-        for($i = 0; $i < 6; $i++)
+        
+
+        foreach($Devices as $device)
         {
-            foreach($Devices as $device)
+            $res = $this->FetchData($device->getSerialNumber());
+            $data = $res->toArray();
+            
+            if($res->getStatusCode() == 404 || $data == null)
             {
-                $res = $this->FetchData($device->getSerialNumber());
-                $data = $res->toArray()[0];
-                
-                $this->mothlyYieldRepository->save($data, $device);          
+                continue;
             }
+
+            $data = $data[0];
+
+            $this->mothlyYieldRepository->save($data, $device);          
         }
     }
 
