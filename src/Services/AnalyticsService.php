@@ -56,16 +56,23 @@ class AnalyticsService
 
         foreach($sortedData as $customerData)
         {
-            $sheet->setCellValue($col.$row, $customerData[0]->getDevice()->getCustomer()->getFirstName().' '.$customerData[0]->getDevice()->getCustomer()->getLastName());
+            $currentCustomer = $customerData[0]->getDevice()->getCustomer();
+
+            $sheet->setCellValue($col.$row, $currentCustomer->getId());
+
+            $col++;
+
+            $sheet->setCellValue($col.$row, $currentCustomer->getFirstName().' '.$customerData[0]->getDevice()->getCustomer()->getLastName());
+            
             $col++;
             //calc yearly revenue
-            $sheet->setCellValue($col.$row, $this->calcYearlyRevenue($customerData));
+            $sheet->setCellValue($col.$row,'€ ' . $this->calcYearlyRevenue($customerData));
             //
-            $col = 'D';
+            $col = 'E';
 
             foreach($customerData as $data)
             {
-                $sheet->setCellValue($col.$row,$data->getStartDate()->format('Y-m-d'));
+                $sheet->setCellValue($col.$row,$data->getSurplus() . ' Kwh');
                 $col++;
             }
             $row++;
@@ -86,13 +93,38 @@ class AnalyticsService
 
     private function calcYearlyRevenue($customerData)
     {
+        $contracts = $this->contractRepository->findBy(['customer' => $customerData[0]->getDevice()->getCustomer()->getId()]);
         $yearlyRevenue = 0;
 
         foreach($customerData as $data)
         {
-            $yearlyRevenue += $data->getYield();
-        }
+            if(!$contracts)
+            {
+                return null;
+            }
 
+            $sellPrice = $contracts[0]->getSellPrice() / 100;
+            $buyPrice = $contracts[0]->getBuyPrice() / 100;
+
+            foreach($contracts as $contract)
+            {
+                $dataStartDate = $data->getStartDate()->format('m-Y');
+                $contractStartDate = $contract->getStartDate()->format('m-Y');
+                $contractEndDate = $contract->getEndDate()->format('m-Y');
+
+                if($dataStartDate >= $contractStartDate && $dataStartDate <= $contractEndDate)
+                {
+                    //would calc revenue here if the data was real
+                    $sellPrice = $contract->getSellPrice() / 100;
+                    $buyPrice = $contract->getBuyPrice() / 100;
+                }
+            }
+
+            $yearlyRevenue += ($data->getYield() - $data->getSurplus()) * $sellPrice - ($data->getSurplus() * $buyPrice);
+        }
+        
+        $yearlyRevenue = round($yearlyRevenue, 2);
+        
         return $yearlyRevenue; 
     }
 
@@ -100,9 +132,10 @@ class AnalyticsService
     {
         $newDate = new DateTime($startdate->format('Y-m-d'));
         $headers = [
+            'Customer ID',
             'Customers',
             'Yearly revenue',
-            'Bought Kwh',
+            'Bought Kwh -->',
         ];     
 
         for($i = 0; $i < count($headers); $i++)
@@ -147,7 +180,7 @@ class AnalyticsService
                 return $a->getStartDate() <=> $b->getStartDate();
             });
             
-            $sortedData[$customer->getID()] = $customerData;
+            $sortedData[$customer->getId()] = $customerData;
         }
 
         return $sortedData;
@@ -166,6 +199,7 @@ class AnalyticsService
                 if($checkValue->getStartDate()->format('Y-m-d') == $compairValue->getStartDate()->format('Y-m-d'))
                 {
                     $compairValue->setYield($compairValue->getYield() + $checkValue->getYield());
+                    $compairValue->setSurplus($compairValue->getSurplus() + $checkValue->getSurplus());
                     $newValue = false;
                     continue;
                 }
