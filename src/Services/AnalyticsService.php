@@ -27,22 +27,21 @@ class AnalyticsService
     {
         $timeframes =
         [
-            'y' => 1,
-            'q' => 4,
-            'm' => 12
+            'y' => 12,
+            'q' => 3,
+            'm' => 1
         ];
 
         $timeframe = $timeframes[$timeframe];
 
-        $customers = $this->getCustomers();
-        $contracts = $this->getContracts();
         $monthlyYields = $this->getMonthlyYields();
 
-        $sortedData = $this->SortCustomerData($monthlyYields, $customers);
+        $sortedData = $this->SortCustomerData($monthlyYields, $timeframe);
 
         //making new spreadsheet
         $fileName = './public/Spreadsheets/customerOverview.xlsx';
         $spreadsheet = new Spreadsheet($fileName);
+
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Customer Overview');
 
@@ -54,30 +53,7 @@ class AnalyticsService
         $col = 'A';
         $row = 2;
 
-        foreach($sortedData as $customerData)
-        {
-            $currentCustomer = $customerData[0]->getDevice()->getCustomer();
-
-            $sheet->setCellValue($col.$row, $currentCustomer->getId());
-
-            $col++;
-
-            $sheet->setCellValue($col.$row, $currentCustomer->getFirstName().' '.$customerData[0]->getDevice()->getCustomer()->getLastName());
-            
-            $col++;
-            //calc yearly revenue
-            $sheet->setCellValue($col.$row,'€ ' . $this->calcYearlyRevenue($customerData));
-            //
-            $col = 'E';
-
-            foreach($customerData as $data)
-            {
-                $sheet->setCellValue($col.$row,$data->getSurplus() . ' Kwh');
-                $col++;
-            }
-            $row++;
-            $col = 'A';
-        }
+        $this->setCustomerData($sheet, $col, $row, $sortedData);
         
         foreach ($sheet->getColumnIterator() as $column)
         {
@@ -89,6 +65,120 @@ class AnalyticsService
         $writer->save($fileName);
 
         return 'Customer Overview spreadsheet created. check' . $fileName . ' for the results';
+    }
+
+    private function setHeaders($sheet, $col, $row, $timeframe, $startdate)
+    {
+        $newStartDate = new DateTime($startdate->format('Y-m-d'));
+        $newEndDate = new DateTime($startdate->format('Y-m-d'));
+        
+        date_modify($newEndDate, '+' . (1 * $timeframe) . ' month');
+
+        $headers = [
+            'Customer ID',
+            'Customers',
+            'Yearly revenue',
+            'Bought Kwh -->',
+        ];     
+
+        for($i = 0; $i < count($headers); $i++)
+        {
+            $sheet->setCellValue($col.$row, $headers[$i]);
+            $sheet->getStyle($col.$row)->getFont()->setBold(true);
+            $col++;
+        }
+
+        for($i = 0; $i < (12/$timeframe); $i++)
+        {
+            $sheet->setCellValue($col.$row, $newStartDate->format('m-Y') . ' - ' . $newEndDate->format('m-Y'));
+            $sheet->getStyle($col.$row)->getFont()->setBold(true);
+
+            date_modify($newStartDate, '+' . (1 * $timeframe) . ' month');
+            date_modify($newEndDate, '+' . (1 * $timeframe) . ' month');
+            
+            $col++;
+        }
+    }
+
+    private function SortCustomerData($yieldData, $timeframe)
+    {
+        $customers = $this->getCustomers();
+
+        $sortedData = [];
+
+        foreach($customers as $customer)
+        {
+            $customerData = [];
+
+            foreach($yieldData as $key => $value)
+            {
+                if($value->getDevice()->getCustomer()->getID() == $customer->getID())
+                {
+                    $customerData[] = $value;     
+                    unset($yieldData[$key]);
+                }
+            }
+
+            $customerData = $this->mergeOnDate($customerData, $timeframe);
+
+            usort($customerData, function($a, $b) 
+            {
+                return $a->getStartDate() <=> $b->getStartDate();
+            });
+            
+            $sortedData[$customer->getId()] = $customerData;
+        }
+
+        return $sortedData;
+    }
+
+    private function mergeOnDate($data, $timeframe)
+    {
+        $mergedData = [];
+
+        usort($data, function($a, $b) 
+        {
+            return $a->getStartDate() <=> $b->getStartDate();
+        });
+
+        $testcount = 0;
+        $testcount2 = 0;
+
+        foreach($data as $checkValue)
+        {
+            $testcount2 = 0;
+            $testcount++;
+
+            $newValue = true;
+
+            $checkStartDate = $checkValue->getStartDate()->format('Y-m-d');
+
+            for($i = count($mergedData) - 1; $i >= 0; $i--)
+            {
+                $compairValue = $mergedData[$i];
+                $testcount2++;
+                $compairStartDate = $compairValue->getStartDate()->format('Y-m-d');
+
+                $compairEndDate = new DateTime($compairStartDate);
+                $compairEndDate = date_modify($compairEndDate, '+' . (1 * $timeframe) . ' month');
+                $compairEndDate = $compairEndDate->format('Y-m-d');
+
+                if($checkStartDate >= $compairStartDate && $checkStartDate < $compairEndDate)
+                {
+                    $compairValue->setYield($compairValue->getYield() + $checkValue->getYield());
+                    $compairValue->setSurplus($compairValue->getSurplus() + $checkValue->getSurplus());
+                    $newValue = false;
+                    break;
+                }
+            }
+
+            if($newValue == true)
+            {
+                $mergedData[] = $checkValue;
+            }
+        }
+
+        return $mergedData;
     }
 
     private function calcYearlyRevenue($customerData)
@@ -128,90 +218,32 @@ class AnalyticsService
         return $yearlyRevenue; 
     }
 
-    private function setHeaders($sheet, $col, $row, $timeframe, $startdate)
+    private function setCustomerData($sheet, $col, $row, $sortedData)
     {
-        $newDate = new DateTime($startdate->format('Y-m-d'));
-        $headers = [
-            'Customer ID',
-            'Customers',
-            'Yearly revenue',
-            'Bought Kwh -->',
-        ];     
-
-        for($i = 0; $i < count($headers); $i++)
+        foreach($sortedData as $customerData)
         {
-            $sheet->setCellValue($col.$row, $headers[$i]);
-            $sheet->getStyle($col.$row)->getFont()->setBold(true);
+            $currentCustomer = $customerData[0]->getDevice()->getCustomer();
+
+            $sheet->setCellValue($col.$row, $currentCustomer->getId());
+
             $col++;
-        }
 
-        date_modify($newDate, '-1 month');
-
-        for($i = 0; $i < $timeframe; $i++)
-        {
-            date_modify($newDate, '+1 month');
-            $sheet->setCellValue($col.$row, $newDate->format('m-Y'));
-            $sheet->getStyle($col.$row)->getFont()->setBold(true);
-            $col++;
-        }
-    }
-
-    private function SortCustomerData($yieldData,$customers)
-    {
-        $sortedData = [];
-
-        foreach($customers as $customer)
-        {
-            $customerData = [];
-
-            foreach($yieldData as $key => $value)
-            {
-                if($value->getDevice()->getCustomer()->getID() == $customer->getID())
-                {
-                    $customerData[] = $value;     
-                    unset($yieldData[$key]);
-                }
-            }
-
-            $customerData = $this->mergeOnDate($customerData);
-
-            usort($customerData, function($a, $b) 
-            {
-                return $a->getStartDate() <=> $b->getStartDate();
-            });
+            $sheet->setCellValue($col.$row, $currentCustomer->getFirstName().' '.$customerData[0]->getDevice()->getCustomer()->getLastName());
             
-            $sortedData[$customer->getId()] = $customerData;
-        }
+            $col++;
+            //calc yearly revenue
+            $sheet->setCellValue($col.$row,'€ ' . $this->calcYearlyRevenue($customerData));
+            //
+            $col = 'E';
 
-        return $sortedData;
-    }
-
-    private function mergeOnDate($data)
-    {
-        $mergedData = [];
-
-        foreach($data as $checkKey => $checkValue)
-        {
-            $newValue = true;
-
-            foreach($mergedData as $compairKey => $compairValue)
+            foreach($customerData as $data)
             {
-                if($checkValue->getStartDate()->format('Y-m-d') == $compairValue->getStartDate()->format('Y-m-d'))
-                {
-                    $compairValue->setYield($compairValue->getYield() + $checkValue->getYield());
-                    $compairValue->setSurplus($compairValue->getSurplus() + $checkValue->getSurplus());
-                    $newValue = false;
-                    continue;
-                }
+                $sheet->setCellValue($col.$row,$data->getSurplus() . ' Kwh');
+                $col++;
             }
-
-            if($newValue == true)
-            {
-                $mergedData[] = $checkValue;
-            }
+            $row++;
+            $col = 'A';
         }
-
-        return $mergedData;
     }
 
     private function getCustomers()

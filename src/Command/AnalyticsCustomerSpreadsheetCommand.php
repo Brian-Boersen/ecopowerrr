@@ -30,7 +30,7 @@ class AnalyticsCustomerSpreadsheetCommand extends Command
     {
         $this
             ->setHelp('gives a spreadsheet of all customers and their data')
-            // ->addArgument('arg1', InputArgument::OPTIONAL, 'Argument description')   
+            ->addArgument('timeframe', InputArgument::OPTIONAL, 'timeframe of data, use: (m, q or y), represents (month, quarter or year)')   
             // ->addOption('option1', null, InputOption::VALUE_NONE, 'Option description')
         ;
     }
@@ -39,7 +39,15 @@ class AnalyticsCustomerSpreadsheetCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $cus_ov = $this->analyticsService->CustomerOverview();
+        if(!$input->getArgument('timeframe'))
+        {
+            $io->error('please enter a timeframe in the form of (m, q or y) for (month, quarter or year)');
+            return Command::FAILURE;
+        }
+        
+        $timeframe = $input->getArgument('timeframe');
+
+        $cus_ov = $this->analyticsService->CustomerOverview($timeframe);
 
         $io->success($cus_ov);
 
