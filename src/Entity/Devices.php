@@ -17,7 +17,7 @@ class Devices
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
-    private ?customer $customer = null;
+    private ?Customer $customer = null;
 
     #[ORM\Column]
     private ?string $serial_number = null;

@@ -18,7 +18,7 @@ class MothlyYield
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
-    private ?devices $device = null;
+    private ?Devices $device = null;
 
     #[ORM\Column]
     private ?string $serial_number = null;

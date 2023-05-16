@@ -10,7 +10,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Services\AnalyticsService;
 
 #[AsCommand(
@@ -39,7 +38,7 @@ class AnalyticsCustomerSpreadsheetCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $spread = IOfactory::createReader('Xlsx');
+
         $cus_ov = $this->analyticsService->CustomerOverview();
 
         $io->success($cus_ov);

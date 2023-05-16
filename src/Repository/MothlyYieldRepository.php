@@ -72,7 +72,7 @@ class MothlyYieldRepository extends ServiceEntityRepository
         $entity->setStartDate($deviceDate);
         $entity->setEndDate($deviceEndDate);
 
-        $this->getEntityManager()->persist($entity);
+        //$this->getEntityManager()->persist($entity);
         return $entity;
     }
 
