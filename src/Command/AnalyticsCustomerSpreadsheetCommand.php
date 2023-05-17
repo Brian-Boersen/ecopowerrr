@@ -44,10 +44,10 @@ class AnalyticsCustomerSpreadsheetCommand extends Command
             $io->error('please enter a timeframe in the form of (m, q or y) for (month, quarter or year)');
             return Command::FAILURE;
         }
-        
+
         $timeframe = $input->getArgument('timeframe');
 
-        $cus_ov = $this->analyticsService->CustomerOverview($timeframe);
+        $cus_ov = $this->analyticsService->customerOverview($timeframe);
 
         $io->success($cus_ov);
 
