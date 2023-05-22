@@ -52,6 +52,7 @@ class CustomerRegistrationService
         $data['city'] = $adress['city'];
         $data['street'] = $adress['street'];
         $data['province'] = $adress['province'];
+        $data['municipality'] = $adress['municipality'];
 
         $result = $this->cs->clientConnect($data);
 

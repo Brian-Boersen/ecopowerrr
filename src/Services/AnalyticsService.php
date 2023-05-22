@@ -197,6 +197,11 @@ class AnalyticsService
     {
         $mergedData = [];
 
+        usort($data, function($a, $b) 
+        {
+            return $a->getStartDate() <=> $b->getStartDate();
+        });
+
         foreach($data as $checkYield)
         {
             $newValue = true;
@@ -227,11 +232,6 @@ class AnalyticsService
                 $mergedData[] = $checkYield;
             }
         }
-
-        usort($mergedData, function($a, $b) 
-        {
-            return $a->getStartDate() <=> $b->getStartDate();
-        });
 
         return $mergedData;
     }

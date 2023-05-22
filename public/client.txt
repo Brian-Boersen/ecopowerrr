@@ -2,16 +2,17 @@ Array
 (
     [email] => fake@mail
     [phonenumber] => 1234
-    [city] => Amsterdam
-    [street] => Maasdrielhof
+    [city] => Eygelshoven
+    [street] => Spoorstraat
     [bankAccount] => rabo 1234
     [contractStartDate] => 01/09/2022
     [contractEndDate] => 01/09/2023
-    [postcode] => 1106nb
-    [houseNumber] => 106
-    [firstName] => Torrey
-    [lastName] => Rawlison
-    [buyPrice] => 142
-    [sellPrice] => 16
-    [province] => Noord-Holland
+    [postcode] => 6471cr
+    [houseNumber] => 9
+    [firstName] => sam
+    [lastName] => bam
+    [buyPrice] => 143
+    [sellPrice] => 17
+    [province] => Limburg
+    [municipality] => Kerkrade
 )

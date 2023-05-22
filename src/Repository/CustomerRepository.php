@@ -43,6 +43,8 @@ class CustomerRepository extends ServiceEntityRepository
 
         $entity->setBankAccount($data['bankAccount']);
 
+        $entity->setMunicipality($data['municipality']);
+
         $this->getEntityManager()->persist($entity);
 
         if ($flush) {

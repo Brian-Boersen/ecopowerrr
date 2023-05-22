@@ -39,7 +39,7 @@ class FetchAllSolarDataCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $this->logger->info('Fetching data' . date(' Y-m-d H:i:s'));
+        $this->logger->info('Fetching data' . date('Y-m-d H:i:s'));
 
         $io->success('Fetched data');
 

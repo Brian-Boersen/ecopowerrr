@@ -47,9 +47,7 @@ class SolarDataCollectorService
 
     public function ReadAllDevices()
     {
-        
         $Devices = $this->devicesRepository->findAll(); 
-        
 
         foreach($Devices as $device)
         {

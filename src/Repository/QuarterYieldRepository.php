@@ -3,6 +3,9 @@
 namespace App\Repository;
 
 use App\Entity\QuarterYield;
+use App\Repository\YearlyYieldRepository;
+
+
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,18 +19,108 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class QuarterYieldRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(ManagerRegistry $registry, private YearlyYieldRepository $yearlyYieldRepository)
     {
         parent::__construct($registry, QuarterYield::class);
     }
 
-    public function save(QuarterYield $entity, bool $flush = false): void
+    public function save($device,$yield,$startDate,$lastYear, bool $flush = false): void
     {
-        $this->getEntityManager()->persist($entity);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
+        $floorYear = new \DateTime($lastYear->format('Y-m-d'));
+        $floorYear->modify('-1 year');
+        
+        if($startDate->format('ym') <= $floorYear->format('ym'))
+        {
+            // $this->yearlyYieldRepository->save($device,$yield,$startDate,$lastYear,true);
+            print_r("!!!!!!
+                     to old
+                     !!!!!!
+                     ");
+            return;
         }
+        
+        $devicesQuarterlyYield = $this->findBy(['serial_number' => $yield['serial_number']]);
+
+        print_r("
+                 serialnumber: ".$yield['serial_number']."
+                 ");
+
+        if($devicesQuarterlyYield != null)
+        {
+            print_r("
+                     same serialnumber found");
+            foreach($devicesQuarterlyYield as $deviceQuarterlyYield)
+            {
+                $dbStartDate = $deviceQuarterlyYield->getStartDate()->format('ym');
+                $dbEndDate = $deviceQuarterlyYield->getEndDate()->format('ym');
+                print_r("
+                     date: ".$startDate->format('ym')." is inbetween startdate: ".$dbStartDate." and endDate: ".$dbEndDate.	"
+                     ");
+                if
+                (
+                    $startDate->format('ym') >= $dbStartDate &&
+                    $startDate->format('ym') <= $dbEndDate
+                )
+                {
+                    print_r("
+                             same date found
+                             ");
+                    $deviceQuarterlyYield->setYield($deviceQuarterlyYield->getYield() + floatval($yield['device_month_yield']));
+                    $deviceQuarterlyYield->setSurplus($deviceQuarterlyYield->getSurplus() + floatval($yield['device_month_surplus']));
+
+                    $this->getEntityManager()->persist($deviceQuarterlyYield);
+
+                    if ($flush) {
+                        $this->getEntityManager()->flush();
+                    }
+                    return;
+                }
+            }            
+        }
+
+        $quarterEndDate = new \DateTime($lastYear->format('Y-m-d'));
+        $quarterStartDate = new \DateTime($lastYear->format('Y-m-d'));
+
+        for($i = 0; $i < 4; $i++)
+        {
+            $quarterStartDate->modify('-3 month');
+
+            if
+            (
+                $startDate->format('ym') >= $quarterStartDate->format('ym') &&
+                $startDate->format('ym') <= $quarterEndDate->format('ym')
+            )
+            {
+                $entity = $this->makeEntety($device,$yield,$quarterStartDate,$quarterEndDate);
+
+                $this->getEntityManager()->persist($entity);
+
+                if ($flush) {
+                    $this->getEntityManager()->flush();
+                }
+                return;
+            }
+
+            $quarterEndDate->modify('-3 month');
+        }
+        
+    }
+
+    private function makeEntety($device,$yield,$deviceDate,$deviceEndDate): QuarterYield
+    {
+        $entity = new QuarterYield();
+
+        $entity->setDevice($device);
+        $entity->setSerialNumber($yield['serial_number']);
+
+        $entity->setYield(floatval($yield['device_month_yield']));
+        $entity->setSurplus(floatval($yield['device_month_surplus']));
+        
+        $entity->setStartDate($deviceDate);
+        $entity->setEndDate($deviceEndDate);
+
+        //$this->getEntityManager()->persist($entity);
+        return $entity;
     }
 
     public function remove(QuarterYield $entity, bool $flush = false): void
