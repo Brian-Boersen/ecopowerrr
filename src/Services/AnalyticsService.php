@@ -15,114 +15,75 @@ class AnalyticsService
     //constructor
     public function __construct
     (
-        private CustomerRepository $customerRepository,
-        private ContractRepository $contractRepository,
-        private DevicesRepository $deviceRepository,
-        private MothlyYieldRepository $monthlyYieldRepository,
+        protected CustomerRepository $customerRepository,
+        protected ContractRepository $contractRepository,
+        protected DevicesRepository $deviceRepository,
+        protected MothlyYieldRepository $monthlyYieldRepository,
     ){}
 
-    public function yearlyRevenue()
+    protected function fillRow($sheet, $col, $row, $values,$prefix = "",$suffix = "",$round = 0)
     {
-        $monthlyYields = $this->getMonthlyYields();
-
-        $sortedData = $this->sortCustomerData($monthlyYields, 1);
-
-        //calculating yearly revenue per customer
-        $revenues = [];
-
-        foreach($sortedData as $customerData)
-        {
-            $revenues[] = $this->calcYearlyCustomerRevenue($customerData,true);
-        }
-
-        //combine calculated revenue
-        $montlyRevenue = $this->combineMonthlyRevenue($revenues);        
-        $revenue = $this->combineYearlyRevenues($revenues);
+        $loops = is_array($values)? count($values): 1;
         
-        //making new spreadsheet
-        $fileName = './public/Spreadsheets/yearlyRevenueOverview.xlsx';
-        $spreadsheet = new Spreadsheet($fileName);
-
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('yearly revenue Overview');
-
-        $col = 'A';
-        $row = 1;
-
-        //setheaders
-        $this->setHeaders($sheet, $col, $row, [1,2,3,4,5,6,7,8,9,10,11,12]);
-
-        //put data in sheet
-        $col = 'A';
-        $row = 2;
-        foreach($montlyRevenue as $revenue)
+        for($i = 0; $i < $loops; $i++)
         {
-            $sheet->setCellValue($col . $row, $revenue);
+            $inVal = (is_array($values)) ?  $values[$i]: $values;
+
+            if($round > 0 && is_float($inVal))
+            {
+                $inVal = round($inVal,$round);
+            }
+
+            $sheet->setCellValue($col.$row, $prefix . $inVal . $suffix);
             $col++;
         }
-        //make trendline
 
-        foreach ($sheet->getColumnIterator() as $column)
-        {
-            $sheet->getColumnDimension($column->getColumnIndex())->setAutoSize(true);
-        }
-                
-        //save sheet
-        $writer = IOFactory::createWriter($spreadsheet, "Xlsx");
-        $writer->save($fileName);
-
-        return 'yearly revenue overview spreadsheet created. total revenue is: €'. round($revenue,2) .' . check ' . $fileName . ' for more results';
+        return $col;
     }
 
-    public function customerOverview($timeframe = "m")
+    protected function findEurliestDate($data)
     {
-        $timeframes =
-        [
-            'y' => 12,
-            'q' => 3,
-            'm' => 1
-        ];
+        $dates = $this->colapseArray($data);
+        $eurliestDate = null;
 
-        $timeframe = $timeframes[$timeframe];
-
-        $monthlyYields = $this->getMonthlyYields();
-
-        $sortedData = $this->sortCustomerData($monthlyYields, $timeframe);
-
-        //making new spreadsheet
-        $fileName = './public/Spreadsheets/customerOverview.xlsx';
-        $spreadsheet = new Spreadsheet($fileName);
-
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Customer Overview');
-
-        $col = 'A';
-        $row = 1;
-
-        $this->setCustomerHeaders($sheet, $col, $row, $timeframe,reset($sortedData)[0]->getStartDate());
-
-        $col = 'A';
-        $row = 2;
-
-        $this->setCustomerData($sheet, $col, $row, $sortedData);
-        
-        foreach ($sheet->getColumnIterator() as $column)
+        foreach($dates as $value)
         {
-            $sheet->getColumnDimension($column->getColumnIndex())->setAutoSize(true);
-        }
-                
-        //save sheet
-        $writer = IOFactory::createWriter($spreadsheet, "Xlsx");
-        $writer->save($fileName);
+            if(!($value->getStartDate() instanceof DateTime))
+            {
+                continue;
+            }
+            
+            if($eurliestDate == null)
+            {
+                $eurliestDate = $value->getStartDate();
+            }
 
-        return 'Customer Overview spreadsheet created. check' . $fileName . ' for the results';
+            if((int)($eurliestDate->format("ymd")) > (int)($value->getStartDate()->format("ymd")))
+            {
+                $eurliestDate = $value->getStartDate()->format("m-Y");
+            }
+        }
+
+        return $eurliestDate;
+    }
+    
+
+    protected function colapseArray($array)
+    {
+        $newArray = [];
+
+        array_walk_recursive($array, function($a) use (&$newArray) { $newArray[] = $a; });
+
+        return $newArray;
     }
 
-    private function setHeaders($sheet, $col, $row, $headers)
+    protected function setHeaders($sheet, $col, $row, $headers)
     {
-        for($i = 0; $i < count($headers); $i++)
+        $allHeaders = $this->colapseArray($headers);
+
+        foreach($allHeaders as $header)
         {
-            $sheet->setCellValue($col.$row, $headers[$i]);
+            $sheet->setCellValue($col.$row, $header);
             $sheet->getStyle($col.$row)->getFont()->setBold(true);
             $col++;
         }
@@ -130,7 +91,32 @@ class AnalyticsService
         return $col;
     } 
 
-    private function setCustomerHeaders($sheet, $col, $row, $timeframe, $startdate)
+    protected function splitOnMunicipality($customers,$customerYields)
+    {
+        $municipalities = [];
+
+        foreach($customerYields as $key => $yields)
+        {
+            foreach($customers as $customer)
+            {
+                if($key == $customer->getId())
+                {
+                    $municipality = $customer->getMunicipality();
+
+                    if(!isset($municipalities[$municipality]))
+                    {
+                        $municipalities[$municipality] = [];
+                    }
+
+                    $municipalities[$municipality][] = $yields[0];
+                }
+            }
+        }
+
+        return $municipalities;
+    }
+
+    protected function setCustomerHeaders($sheet, $col, $row, $timeframe, $startdate)
     {
         $newStartDate = new DateTime($startdate->format('Y-m-d'));
         $newEndDate = new DateTime($startdate->format('Y-m-d'));
@@ -158,7 +144,29 @@ class AnalyticsService
         }
     }
 
-    private function sortCustomerData($yieldData, $timeframe)
+    protected function getDateList(DateTime $startdate, $timeframe)
+    {
+        $newStartDate = new DateTime($startdate->format('Y-m-d'));
+        $newEndDate = new DateTime($startdate->format('Y-m-d'));
+
+        date_modify($newEndDate, '+' . (1 * $timeframe) . ' month');            
+
+
+        $sortedDates = [];
+
+        for($i = 0; $i < (12/$timeframe); $i++)
+        {
+            $sortedDates[] = $newStartDate->format('m-Y') . ' - ' . $newEndDate->format('m-Y');
+
+            date_modify($newStartDate, '+' . (1 * $timeframe) . ' month');
+            date_modify($newEndDate, '+' . (1 * $timeframe) . ' month');            
+        }
+        
+
+        return $sortedDates;
+    }
+
+    protected function sortCustomerData($yieldData, $timeframe)
     {
         $customers = $this->getCustomers();
 
@@ -190,7 +198,7 @@ class AnalyticsService
         return $sortedData;
     }
 
-    private function mergeOnDate($data, $timeframe)
+    protected function mergeOnDate($data, $timeframe)
     {
         $mergedData = [];
 
@@ -233,7 +241,31 @@ class AnalyticsService
         return $mergedData;
     }
 
-    private function combineMonthlyRevenue($revenue)
+    protected function calcYearlyCustomerYield($data)
+    {
+        $yearlyYield = 0;
+
+        foreach($data as $data)
+        {
+            $yearlyYield += $data->getYield();
+        }
+
+        return $yearlyYield;
+    }
+
+    protected function calcYearlyCustomerSurplus($data)
+    {
+        $yearlySurplus = 0;
+
+        foreach($data as $data)
+        {
+            $yearlySurplus += $data->getSurplus();
+        }
+
+        return $yearlySurplus;
+    }
+
+    protected function combineMonthlyRevenue($revenue)
     {
         $monthlyArray = [];
         $monthlyRevenue = [];
@@ -276,7 +308,7 @@ class AnalyticsService
         return $monthlyRevenue;
     }
 
-    private function combineYearlyRevenues($Revenues)
+    protected function combineYearlyRevenues($Revenues)
     {
         $yearlyRevenue = 0;
 
@@ -291,7 +323,7 @@ class AnalyticsService
         return $yearlyRevenue;
     }
 
-    private function calcYearlyCustomerRevenue($customerData,$separate = false)
+    protected function calcYearlyCustomerRevenue($customerData,$separate = false)
     {
         // $contracts = $this->getContractsBy('customer',  $customerData[0]->getDevice()->getCustomer()->getId()); 
         $contracts = $this->contractRepository->findAll();
@@ -310,14 +342,14 @@ class AnalyticsService
                 return null;
             }
 
-            $dataCustomerId = $data->getDevice()->getCustomer()->getId();
+            $customerId = $data->getDevice()->getCustomer()->getId();
 
             $sellPrice = $contracts[0]->getSellPrice() / 100;
             $buyPrice = $contracts[0]->getBuyPrice() / 100;
 
             foreach($contracts as $contract)
             {
-                if($contract->getCustomer()->getId() != $dataCustomerId)
+                if($contract->getCustomer()->getId() != $customerId)
                 {
                     continue;
                 }
@@ -349,7 +381,7 @@ class AnalyticsService
         return $yearlyRevenue; 
     }
 
-    private function setCustomerData($sheet, $col, $row, $sortedData)
+    protected function setCustomerData($sheet, $col, $row, $sortedData)
     {
         foreach($sortedData as $customerData)
         {
@@ -410,22 +442,36 @@ class AnalyticsService
 
                 $col++;
             }
+
             $row++;
             $col = 'A';
         }
     }
 
-    private function getCustomers()
+    protected function saveSheet($spreadsheet, $sheet, $fileName)
+    {
+        //space cells
+        foreach ($sheet->getColumnIterator() as $column)
+        {
+            $sheet->getColumnDimension($column->getColumnIndex())->setAutoSize(true);
+        }
+                
+        //save sheet
+        $writer = IOFactory::createWriter($spreadsheet, "Xlsx");
+        $writer->save($fileName);
+    }
+
+    protected function getCustomers()
     {
         return $this->customerRepository->findAll();
     }
 
-    private function getContractsBy($field, $value)
+    protected function getContractsBy($field, $value)
     {
         return $this->contractRepository->findBy([$field => $value]);
     }
 
-    private function getMonthlyYields()
+    protected function getMonthlyYields()
     {
         return $this->monthlyYieldRepository->findAll();
     }

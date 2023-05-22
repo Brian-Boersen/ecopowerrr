@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use App\Services\AnalyticsService;
+use App\Services\CustomerAnalyticService;
 
 #[AsCommand(
     name: 'analytics:customer:spreadsheet',
@@ -20,7 +20,7 @@ class AnalyticsCustomerSpreadsheetCommand extends Command
 {
     public function __construct
     (
-        private AnalyticsService $analyticsService
+        private CustomerAnalyticService $analyticsService
     )
     {
         parent::__construct();

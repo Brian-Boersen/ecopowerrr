@@ -10,34 +10,36 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+use App\Services\MunicipalityAnalyticService;
+
 #[AsCommand(
     name: 'analytics:municipality:spreadsheet',
-    description: 'Add a short description for your command',
+    description: 'gives total revenue, yield and surplus per municipality',
 )]
 class AnalyticsMunicipalitySpreadsheetCommand extends Command
 {
+    public function __construct
+    (
+        private MunicipalityAnalyticService $analyticsService
+    )
+    {
+        parent::__construct();
+    }
+
     protected function configure(): void
     {
         $this
-            ->addArgument('arg1', InputArgument::OPTIONAL, 'Argument description')
-            ->addOption('option1', null, InputOption::VALUE_NONE, 'Option description')
+        ->setHelp('gives a spreadsheet of total revenue of this year and a trendline based on past results')
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $arg1 = $input->getArgument('arg1');
 
-        if ($arg1) {
-            $io->note(sprintf('You passed an argument: %s', $arg1));
-        }
+        $cus_ov = $this->analyticsService->municipalityOverview();
 
-        if ($input->getOption('option1')) {
-            // ...
-        }
-
-        $io->success('You have a new command! Now make it your own! Pass --help to see your options.');
+        $io->success($cus_ov);
 
         return Command::SUCCESS;
     }

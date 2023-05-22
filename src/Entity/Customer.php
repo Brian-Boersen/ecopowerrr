@@ -45,6 +45,9 @@ class Customer
     #[ORM\Column(length: 30)]
     private ?string $province = null;
 
+    #[ORM\Column(length: 255)]
+    private ?string $municipality = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -166,6 +169,18 @@ class Customer
     public function setProvince(string $province): self
     {
         $this->province = $province;
+
+        return $this;
+    }
+
+    public function getMunicipality(): ?string
+    {
+        return $this->municipality;
+    }
+
+    public function setMunicipality(string $municipality): self
+    {
+        $this->municipality = $municipality;
 
         return $this;
     }
