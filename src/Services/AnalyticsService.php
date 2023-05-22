@@ -186,11 +186,6 @@ class AnalyticsService
             }
 
             $customerData = $this->mergeOnDate($customerData, $timeframe);
-
-            usort($customerData, function($a, $b) 
-            {
-                return $a->getStartDate() <=> $b->getStartDate();
-            });
             
             $sortedData[$customer->getId()] = $customerData;
         }
@@ -202,31 +197,26 @@ class AnalyticsService
     {
         $mergedData = [];
 
-        usort($data, function($a, $b) 
-        {
-            return $a->getStartDate() <=> $b->getStartDate();
-        });
-
-        foreach($data as $checkValue)
+        foreach($data as $checkYield)
         {
             $newValue = true;
 
-            $checkStartDate = $checkValue->getStartDate()->format('Ymd');
+            $checkStartDate = $checkYield->getStartDate()->format('Ymd');
 
             for($i = count($mergedData) - 1; $i >= 0; $i--)
             {
-                $compareValue = $mergedData[$i];
+                $compareYield = $mergedData[$i];
 
-                $compareStartDate = $compareValue->getStartDate()->format('Ymd');
+                $compareStartDate = $compareYield->getStartDate()->format('Ymd');
 
-                $compareEndDate = new DateTime($compareValue->getStartDate()->format('y-m-d'));
+                $compareEndDate = new DateTime($compareYield->getStartDate()->format('y-m-d'));
                 $compareEndDate = date_modify($compareEndDate, '+' . (1 * $timeframe) . ' month');
                 $compareEndDate = $compareEndDate->format('Ymd');
 
                 if((int)$checkStartDate >= (int)$compareStartDate && (int)$checkStartDate < (int)$compareEndDate)
                 {
-                    $compareValue->setYield($compareValue->getYield() + $checkValue->getYield());
-                    $compareValue->setSurplus($compareValue->getSurplus() + $checkValue->getSurplus());
+                    $compareYield->setYield($compareYield->getYield() + $checkYield->getYield());
+                    $compareYield->setSurplus($compareYield->getSurplus() + $checkYield->getSurplus());
                     $newValue = false;
                     break;
                 }
@@ -234,9 +224,14 @@ class AnalyticsService
 
             if($newValue == true)
             {
-                $mergedData[] = $checkValue;
+                $mergedData[] = $checkYield;
             }
         }
+
+        usort($mergedData, function($a, $b) 
+        {
+            return $a->getStartDate() <=> $b->getStartDate();
+        });
 
         return $mergedData;
     }
