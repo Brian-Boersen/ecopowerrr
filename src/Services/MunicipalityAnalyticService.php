@@ -31,7 +31,7 @@ class MunicipalityAnalyticService extends AnalyticsService
         $row = 1;
 
         //set headers
-        $this->setHeaders($sheet, $col, $row, ['Municipality','Total revenue','Total yield','Total surplus']);
+        $this->setHeaders($sheet, $col, $row, ['Municipality','Total revenue','Total yield (KWH)','Total surplus (KWH)']);
 
         //fill cells
         $col = 'A';
@@ -52,7 +52,7 @@ class MunicipalityAnalyticService extends AnalyticsService
         //space cells and save sheet
         $this->saveSheet($spreadsheet,$sheet, $fileName);
 
-        return 'Municipality Overview spreadsheet created. check' . $fileName . ' for the results';
+        return 'Municipality Overview spreadsheet created. check: ' . $fileName . ' for the results';
 
     }
 }
