@@ -320,7 +320,6 @@ class AnalyticsService
 
     protected function calcYearlyCustomerRevenue($customerData,$separate = false)
     {
-        // $contracts = $this->getContractsBy('customer',  $customerData[0]->getDevice()->getCustomer()->getId()); 
         $contracts = $this->contractRepository->findAll();
         
         $yearlyRevenue = 0;
@@ -433,7 +432,6 @@ class AnalyticsService
                 }
 
                 $sheet->setCellValue($col.$row,$data->getSurplus() . ' Kwh');
-                // $sheet->setCellValue($col.$row,$data->getStartDate()->format('m-Y'));
 
                 $col++;
             }

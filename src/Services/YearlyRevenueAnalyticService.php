@@ -46,17 +46,9 @@ class YearlyRevenueAnalyticService extends AnalyticsService
         $col = 'A';
         $row = 2;
         
-        // $sheet->setCellValue($col . $row, '€'.round($revenue,3));
         $col = $this->fillRow($sheet, $col, $row, $revenue,'€','',3);
 
         $col = $this->fillRow($sheet, $col, $row, $montlyRevenue,'€','',2);
-        // foreach($montlyRevenue as $monthlyRevenue)
-        // {
-        //     $sheet->setCellValue($col . $row, '€'.round($monthlyRevenue,2));
-        //     $col++;
-        // }
-
-        //make trendline
 
         $this->saveSheet($spreadsheet,$sheet, $fileName);
 

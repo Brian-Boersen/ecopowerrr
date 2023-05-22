@@ -12,11 +12,11 @@ class MunicipalityAnalyticService extends AnalyticsService
         //get customers
         $monthlyYields = $this->getMonthlyYields();
 
-        //sort customers
-        $customers = $this->getCustomers();
+        //sort yields per customer
         $yields = $this->sortCustomerData($monthlyYields, 12);
-
+        
         //split customers by municipality
+        $customers = $this->getCustomers();
         $municipalities = $this->splitOnMunicipality($customers, $yields);
 
             //make spreadsheet
@@ -34,8 +34,7 @@ class MunicipalityAnalyticService extends AnalyticsService
         $this->setHeaders($sheet, $col, $row, ['Municipality','Total revenue','Total yield (KWH)','Total surplus (KWH)']);
 
         //fill cells
-        $col = 'A';
-        $row = 2;
+        $row++;
 
         foreach($municipalities as $municipality => $yields)
         {
