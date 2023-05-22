@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 class YearlyRevenueAnalyticService extends AnalyticsService
@@ -40,11 +39,10 @@ class YearlyRevenueAnalyticService extends AnalyticsService
 
         $dateList = $this->getDateList($startDate, 1);
         
+        //put data in sheet
         $this->setHeaders($sheet, $col, $row, ['Total revenue',$dateList]);
 
-        //put data in sheet
-        $col = 'A';
-        $row = 2;
+        $row++;
         
         $col = $this->fillRow($sheet, $col, $row, $revenue,'€','',3);
 

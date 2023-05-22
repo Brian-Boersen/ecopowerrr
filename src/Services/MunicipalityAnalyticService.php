@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 class MunicipalityAnalyticService extends AnalyticsService

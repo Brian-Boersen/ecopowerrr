@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 
@@ -35,13 +34,12 @@ class CustomerAnalyticService extends AnalyticsService
 
         $this->setCustomerHeaders($sheet, $col, $row, $timeframe,reset($sortedData)[0]->getStartDate());
 
-        $col = 'A';
-        $row = 2;
+        $row++;
 
         $this->setCustomerData($sheet, $col, $row, $sortedData);
         
         $this->saveSheet($spreadsheet,$sheet, $fileName);
 
-        return 'Customer Overview spreadsheet created. check' . $fileName . ' for the results';
+        return 'Customer Overview spreadsheet created. check: ' . $fileName . ' for the results';
     }
 }

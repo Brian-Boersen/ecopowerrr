@@ -309,7 +309,7 @@ class AnalyticsService
 
         foreach($Revenues as $value)
         {
-            foreach($value as $key => $val)
+            foreach($value as $val)
             {
                 $yearlyRevenue += $val[1];
             }
