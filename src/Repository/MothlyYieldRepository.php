@@ -46,15 +46,9 @@ class MothlyYieldRepository extends ServiceEntityRepository
 
         foreach($data['devices'] as $device)
         {
-            print_r(json_encode($device));
-            
-            print_r("new device: ". $dev->getId() . "
-            ");
-            die();
-            
             if($deviceDate->format('ym') <= $thisYear->format('ym'))
             {
-                $this->quarterYieldRepository->save($dev, $device, $deviceDate, $thisYear, true);
+                $this->quarterYieldRepository->save($dev, $device, $deviceDate, $thisYear, $flush);
                 continue;
             }
 
@@ -64,9 +58,6 @@ class MothlyYieldRepository extends ServiceEntityRepository
             {
                 if((int)$deviceMonthlyYield->getStartDate()->format('ymd') == (int)$deviceDate->format('ymd'))
                 {
-                    print_r("
-                    solar data on date: " . $deviceDate->format('d-m-Y') . " already exists for device with id: ". $device['serial_number'] . "
-                    \n");
                     $skip = true;
                     break;
                 }
@@ -77,8 +68,6 @@ class MothlyYieldRepository extends ServiceEntityRepository
                 $skip = false;
                 continue;
             }
-
-            print_r("added id: " . $dev->getId() . "\n");
 
             $entity = $this->makeEntety($dev,$device,$deviceDate,$deviceEndDate);
 

@@ -31,48 +31,35 @@ class QuarterYieldRepository extends ServiceEntityRepository
         
         if($startDate->format('ym') <= $floorYear->format('ym'))
         {
-            // $this->yearlyYieldRepository->save($device,$yield,$startDate,$lastYear,true);
-            print_r("!!!!!!
-                     to old
-                     !!!!!!
-                     ");
+            $this->yearlyYieldRepository->save($device,$yield,$startDate,$floorYear,$flush);
             return;
         }
         
         $devicesQuarterlyYield = $this->findBy(['serial_number' => $yield['serial_number']]);
 
-        print_r("
-                 serialnumber: ".$yield['serial_number']."
-                 ");
-
         if($devicesQuarterlyYield != null)
         {
-            print_r("
-                     same serialnumber found");
             foreach($devicesQuarterlyYield as $deviceQuarterlyYield)
             {
                 $dbStartDate = $deviceQuarterlyYield->getStartDate()->format('ym');
                 $dbEndDate = $deviceQuarterlyYield->getEndDate()->format('ym');
-                print_r("
-                     date: ".$startDate->format('ym')." is inbetween startdate: ".$dbStartDate." and endDate: ".$dbEndDate.	"
-                     ");
+
                 if
                 (
                     $startDate->format('ym') >= $dbStartDate &&
                     $startDate->format('ym') <= $dbEndDate
                 )
                 {
-                    print_r("
-                             same date found
-                             ");
                     $deviceQuarterlyYield->setYield($deviceQuarterlyYield->getYield() + floatval($yield['device_month_yield']));
                     $deviceQuarterlyYield->setSurplus($deviceQuarterlyYield->getSurplus() + floatval($yield['device_month_surplus']));
 
                     $this->getEntityManager()->persist($deviceQuarterlyYield);
 
-                    if ($flush) {
+                    if ($flush)
+                    {
                         $this->getEntityManager()->flush();
                     }
+
                     return;
                 }
             }            
@@ -103,7 +90,6 @@ class QuarterYieldRepository extends ServiceEntityRepository
 
             $quarterEndDate->modify('-3 month');
         }
-        
     }
 
     private function makeEntety($device,$yield,$deviceDate,$deviceEndDate): QuarterYield

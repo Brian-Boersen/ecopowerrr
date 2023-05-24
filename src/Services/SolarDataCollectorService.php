@@ -6,6 +6,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\HttpClient\RetryableHttpClient;
+use Symfony\Component\HttpClient\HttpClient;
+
 
 use App\Repository\DevicesRepository;
 use App\Repository\CustomerRepository;
@@ -15,6 +18,8 @@ use Symfony\Component\Serializer\Encoder\JsonDecode;
 
 class SolarDataCollectorService
 {
+    private $retryClient;
+
     public function __construct
     (
         private HttpClientInterface $client,
@@ -23,13 +28,15 @@ class SolarDataCollectorService
         private Customer $customer,
         private MothlyYieldRepository $mothlyYieldRepository
         )
-    {}
+    {
+        $this->retryClient = new RetryableHttpClient(HttpClient::create());
+    }
     
     public function ReadNewDevice(Customer $customer)
     {
-        $res = $this->FetchData();
+        $data = $this->FetchData();
 
-        $data = $res->toArray()[0];
+        $data = $data[0];
 
         $deviceData = [
             'device_id' => $data['device_id'],
@@ -45,16 +52,94 @@ class SolarDataCollectorService
         return $data;
     }
 
+    public function ReadOne($sn)
+    {
+        $res = $this->FetchData($sn);
+
+        if(count($res) == 0)
+        {
+            return null;
+        }
+
+        $data = $res[0];
+
+        print_r(json_encode($data));
+
+        return $data;
+    }
+
+    private $addedDevices = 0;
+    private $completedDevices = 0;
+
+    public function ReadAllMultiple($amountPerDevice = 1)
+    {
+        $Devices = $this->devicesRepository->findAll(); 
+        $GetheredData = [];
+
+        $lastDevice = end($Devices)->getSerialNumber();
+        $devicesCount = count($Devices);
+        $devicesAdded = 0;
+        $flushAfter = 1;
+
+        $flush = false;
+
+        foreach($Devices as $device)
+        {
+            $flush = false;
+
+            $SN = $device->getSerialNumber();
+
+            $devicesAdded++;
+
+            if($devicesAdded >= $flushAfter)//$SN == $lastDevice)
+            {
+                $flush = true;
+                $devicesAdded = 0;
+                print_r("\n flushing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            }
+
+            for($i = 0; $i < $amountPerDevice; $i++)
+            {    
+                $data = $this->FetchData($SN,"/x");
+                
+                if($data == null)
+                {
+                    continue;
+                }
+
+                $data = $data[0];
+                $GetheredData[] = $data;
+
+                if($i < $amountPerDevice - 1)
+                {
+                    $this->mothlyYieldRepository->save($data, $device, false);      
+                }
+                else
+                {
+                    $this->mothlyYieldRepository->save($data, $device, $flush);      
+                }
+
+                $this->addedDevices++;
+                print_r("\n". $this->addedDevices);
+            }
+
+            $this->completedDevices++;
+
+            print_r("\n". $this->completedDevices .") added device with id: ".$SN);
+        }
+
+        return $GetheredData;
+    }
+
     public function ReadAllDevices()
     {
         $Devices = $this->devicesRepository->findAll(); 
 
         foreach($Devices as $device)
         {
-            $res = $this->FetchData($device->getSerialNumber());
-            $data = $res->toArray();
+            $data = $this->FetchData($device->getSerialNumber());
             
-            if($res->getStatusCode() == 404 || $data == null)
+            if($data == null)
             {
                 continue;
             }
@@ -65,15 +150,22 @@ class SolarDataCollectorService
         }
     }
 
-    private function FetchData($id = "")
+    private $connections = 0;
+
+    private function FetchData($id = "", $x = "")
     {
         ($id == "")? $id = "":$id = "/$id";
 
-        $data =  $this->client->request(
+        $response =  $this->retryClient->request(
             'GET',
-            "http://localhost:70/fetch_data$id"
+            "http://localhost:70/fetch_data$x$id"
         );
         
+        $this->connections++;
+        $data = $response->toArray();
+ 
+        $response->cancel();
+
         return $data;
     }
 
