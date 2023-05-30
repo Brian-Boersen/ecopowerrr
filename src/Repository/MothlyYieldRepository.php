@@ -22,12 +22,14 @@ use PhpOffice\PhpSpreadsheet\Calculation\DateTimeExcel\Date;
  */
 class MothlyYieldRepository extends ServiceEntityRepository
 {
+    private $devicesMonthlyYield = null;
+
     public function __construct(ManagerRegistry $registry, private QuarterYieldRepository $quarterYieldRepository)
     {
         parent::__construct($registry, MothlyYield::class);
     }
 
-    public function save(array $data,Devices $dev, bool $flush = true)
+    public function save(array $data,Devices $dev, bool $flush = true , bool $first = true)
     {
         $splitDate = explode("/", $data['date']);
 
@@ -42,6 +44,11 @@ class MothlyYieldRepository extends ServiceEntityRepository
         $thisYear = new \DateTime();
         $thisYear->modify('-1 year');
 
+        if($first == true)
+        {
+            $this->devicesMonthlyYield = $this->findBy(['device' => $dev->getId()]);
+        }
+
         $skip = false;
 
         foreach($data['devices'] as $device)
@@ -52,22 +59,30 @@ class MothlyYieldRepository extends ServiceEntityRepository
                 continue;
             }
 
-            $devicesMonthlyYield = $this->findBy(['serial_number' => $device['serial_number']]);
+            $keys = array_keys($this->devicesMonthlyYield, $device['serial_number']);
 
-            foreach($devicesMonthlyYield as $deviceMonthlyYield)
+            foreach($keys as $key)
             {
-                if((int)$deviceMonthlyYield->getStartDate()->format('ymd') == (int)$deviceDate->format('ymd'))
+                if((int)$this->devicesMonthlyYield[$key]->getStartDate()->format('ymd') == (int)$deviceDate->format('ymd'))
                 {
                     $skip = true;
                     break;
                 }
-            }
-
+            } 
+            
             if($skip === true)
             {
                 $skip = false;
                 continue;
             }
+            // foreach($devicesMonthlyYield as $deviceMonthlyYield)
+            // {
+            //     if((int)$deviceMonthlyYield->getStartDate()->format('ymd') == (int)$deviceDate->format('ymd'))
+            //     {
+            //         $skip = true;
+            //         break;
+            //     }
+            // }
 
             $entity = $this->makeEntety($dev,$device,$deviceDate,$deviceEndDate);
 

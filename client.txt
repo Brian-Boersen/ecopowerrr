@@ -1,20 +1,20 @@
 Array
 (
-    [firstName] => generate
-    [lastName] => generate
+    [firstName] => jhon
+    [lastName] => doe
     [email] => fake@mail.com
     [phonenumber] => 1234
     [contractStartDate] => 01/09/2010
     [contractEndDate] => 01/09/2023
     [buyPrice] => 143
     [sellPrice] => 17
-    [postcode] => 7006rh
-    [street] => generate
-    [houseNumber] => 8064
-    [city] => generate
-    [province] => generate
-    [municipality] => generate
+    [postcode] => 1422dr
+    [street] => 
+    [houseNumber] => 9534
+    [city] => 
+    [province] => 
+    [municipality] => 
     [bankAccount] => Rabo 1234
-    [lat] => 51.96644860
-    [long] => 6.26527050
+    [lat] => 52.24427850
+    [long] => 4.84152300
 )

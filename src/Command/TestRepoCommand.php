@@ -43,9 +43,9 @@ class TestRepoCommand extends Command
         $retext = "";
 
         //dont forget to uncomment storing in the db
-        $datas = $this->solarDataService->ReadAllMultiple(30);
+        $datas = $this->solarDataService->ReadAllMultiple();
 
-        $retext .= "\n count: " . count($datas). "\n";
+        (is_array($datas) == true) ?$retext .= "\n count: " . count($datas). "\n":"";
        
         if($datas == null)
         {
@@ -53,8 +53,7 @@ class TestRepoCommand extends Command
             return Command::FAILURE;
         }
 
-        $io->success("succes, dates are: /n" .$retext."
-                     ");
+        $io->success("succes, dates are: /n" .$retext);
         return Command::SUCCESS;
     }
 

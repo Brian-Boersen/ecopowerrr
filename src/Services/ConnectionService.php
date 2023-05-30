@@ -22,7 +22,7 @@ class ConnectionService {
         private SolarDataCollectorService $solarDataService
     ){}
 
-    public function clientConnect($data)
+    public function clientConnect($data,$fake = false)
     {
         file_put_contents('client.txt', print_r($data, true));
 
@@ -32,13 +32,19 @@ class ConnectionService {
         /// create contract 
         $this->createContract($data,$newCustomer);
 
+        if($fake == true)
+        {
+            $this->CreateDevice($newCustomer);
+            return;
+        }
+        
         /// set status 
         $this->SetStatus();
 
         //// read devices
-        $testData = $this->ReadDevices($newCustomer);
+        $this->ReadDevices($newCustomer);
 
-        return $testData;
+        return;
     }
 
     private function saveCustomer($data) 
@@ -69,5 +75,10 @@ class ConnectionService {
     private function ReadDevices(Customer $customer)
     {
         return $this->solarDataService->ReadNewDevice($customer);
+    }
+
+    private function CreateDevice(Customer $customer)
+    {
+        return $this->solarDataService->CreateFakeDevice($customer);
     }
 }

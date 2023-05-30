@@ -9,6 +9,8 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpClient\RetryableHttpClient;
 use Symfony\Component\HttpClient\HttpClient;
 
+//
+
 
 use App\Repository\DevicesRepository;
 use App\Repository\CustomerRepository;
@@ -20,6 +22,16 @@ class SolarDataCollectorService
 {
     private $retryClient;
 
+    private $ItarableDate;
+    private $presentDate;
+    
+    private $FakeDeviceData;
+
+    private $reachedEnd = false;
+    
+    private $addedDevices = 0;
+    private $completedDevices = 0;
+
     public function __construct
     (
         private HttpClientInterface $client,
@@ -30,7 +42,18 @@ class SolarDataCollectorService
         )
     {
         $this->retryClient = new RetryableHttpClient(HttpClient::create());
+
+        $this->ItarableDate = new \DateTime();
+        $this->presentDate = 
+        [
+            $this->ItarableDate->format('Y'),
+            $this->ItarableDate->format('m'),
+            $this->ItarableDate->format('d')
+        ];
+
+        $this->FakeDeviceData = $this->fetchDataFile("./public/test_data/solar-data.json");
     }
+    
     
     public function ReadNewDevice(Customer $customer)
     {
@@ -68,29 +91,120 @@ class SolarDataCollectorService
         return $data;
     }
 
-    private $addedDevices = 0;
-    private $completedDevices = 0;
+    public function CreateFakeDevice(Customer $customer)
+    {
+        $panelSerial = rand(10000000000,99999999999);
 
-    public function ReadAllMultiple($amountPerDevice = 1)
+        $currentDate = new \DateTime();
+        $totalSolarpanels = rand(5,20);
+        
+        $newForgedData = 
+        [
+            "device_id" => $panelSerial,
+
+            "device_status" => "active",
+            "date" => $currentDate->format('d/m/Y'),
+            "type" => $totalSolarpanels
+        ];
+          
+
+        for($i = 0; $i < $totalSolarpanels; $i++)
+        {
+            $totalYield = rand(100000,900000) / 100;
+            $totalSurplus = rand(100000,$totalYield) / 100;
+            $ranYield = rand(50,250);
+            $ranSurplus = rand(0,$ranYield);
+
+            $panelSerial = rand(10000000000,99999999999);
+
+            $newForgedData['devices'][] = 
+            [
+                "serial_number" => $panelSerial,
+                "device_type" => "solar",
+                "device_status" => "active",
+                "device_total_yield" =>$totalYield ."kWh",
+                "device_month_yield" => $ranYield ."kWh",
+                "device_month_surplus" => $ranSurplus ."kWh",
+                "device_total_surpuls" => $totalSurplus ."kWh"
+            ];
+        }
+
+        // dd($newForgedData);
+
+        $newDevice = $this->devicesRepository->save($newForgedData, $customer);
+        $this->mothlyYieldRepository->save($newForgedData, $newDevice);
+    }
+
+    // public function reducePanels($data)
+    // {
+    //     $newData = [];
+
+    //     $addNew = true;
+
+    //     foreach($data as $newDevice)
+    //     {
+    //         foreach($newData as $device)
+    //         {
+    //             if($device['device_id'] == $newDevice['device_id'])
+    //             {
+    //                 $addNew = false;
+    //             }
+    //         }
+
+    //         if($addNew == true)
+    //         {
+    //             $newData[] = $newDevice;
+    //         }
+
+    //         $addNew = true;
+    //     }
+
+    //     return $newData;
+    // }
+
+    public function ReadAllMultiple()
     {
         $Devices = $this->devicesRepository->findAll(); 
-        $GetheredData = [];
 
+        $GetheredData = [];
+        
+        $data = $this->FakeDeviceData;
+        
         $lastDevice = end($Devices)->getSerialNumber();
         $devicesCount = count($Devices);
         $devicesAdded = 0;
-        $flushAfter = 1;
+
+        //dont put higher than 100 or it will exaust the memory
+        $flushAfter = 10;
 
         $flush = false;
-
+        
         foreach($Devices as $device)
         {
+            print_r("\n". $device->getId());
+
+            $panels = $this->mothlyYieldRepository->findBy(['device' => $device->getId()]);
+
+            if(count($panels) > 0)
+            {
+                print_r("\n paneles not found");
+                die();
+            }
+
+            array_filter($panels, "self::reducePanels");
+
+            if(count($panels) > 0)
+            {
+                print_r("\n paneles not filterd");
+                die();
+            }
+
             $flush = false;
 
             $SN = $device->getSerialNumber();
 
             $devicesAdded++;
-
+            
             if($devicesAdded >= $flushAfter)//$SN == $lastDevice)
             {
                 $flush = true;
@@ -98,37 +212,89 @@ class SolarDataCollectorService
                 print_r("\n flushing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             }
 
-            for($i = 0; $i < $amountPerDevice; $i++)
+            $deviceData = $data[array_search($SN, array_column($data, 'device_id'))];
+            
+            if($deviceData == null)
+            {
+                continue;
+            }
+
+            print_r("\n". $deviceData['device_id']);
+            
+            while($this->reachedEnd == false)
             {    
-                $data = $this->FetchData($SN,"/x");
+                $GetheredData[] = $deviceData;
                 
-                if($data == null)
+                $newForgedData = 
+                    [
+                        "device_status" => "active",
+                        "date" => $this->iterateDate(1),
+
+                        "device_id" => $SN,
+                        "type" => $device['type']
+                    ];
+                        
+
+                foreach($deviceData['devices'] as $panel)
                 {
-                    continue;
+                    $totalYield = rand(100000,1000000) / 100;
+                    $totalSurplus = rand(100000,$totalYield) / 100;
+                    $ranYield = rand(50,250);
+                    $ranSurplus = rand(0,$ranYield);
+
+                    $newForgedData['devices'][] = 
+                    [
+                        "serial_number" => $panel['serial_number'],
+                        "device_type" => "solar",
+                        "device_status" => "active",
+                        "device_total_yield" =>$totalYield ."kWh",
+                        "device_month_yield" => $ranYield ."kWh",
+                        "device_month_surplus" => $ranSurplus ."kWh",
+                        "device_total_surpuls" => $totalSurplus ."kWh"
+                    ];
                 }
+                // dd($newForgedData);
+                // die();
 
-                $data = $data[0];
-                $GetheredData[] = $data;
-
-                if($i < $amountPerDevice - 1)
+                if($this->reachedEnd == true && $flush == true)
                 {
-                    $this->mothlyYieldRepository->save($data, $device, false);      
+                    $this->mothlyYieldRepository->save($newForgedData, $device, false);      
                 }
                 else
                 {
-                    $this->mothlyYieldRepository->save($data, $device, $flush);      
+                    $this->mothlyYieldRepository->save($newForgedData, $device, $flush);      
                 }
 
                 $this->addedDevices++;
-                print_r("\n". $this->addedDevices);
-            }
-
+                // print_r("\n date: ". $newForgedData['date']);
+            }  
+            
             $this->completedDevices++;
+
+            $this->reachedEnd = false;
 
             print_r("\n". $this->completedDevices .") added device with id: ".$SN);
         }
 
         return $GetheredData;
+    }
+
+    private function iterateDate($months,$resetDate = "20130501")
+    {
+        $newdate = $this->ItarableDate->format('d/m/Y');
+
+        $this->ItarableDate->modify('-'.$months.' month');
+
+        $resetDate += 100;
+        $checkDate = $this->ItarableDate->format('Ymd');
+
+        if($resetDate >= $checkDate)
+        {
+            $this->reachedEnd = true;
+            $this->ItarableDate->setDate($this->presentDate[0],$this->presentDate[1],$this->presentDate[2]);
+        }
+        
+        return $newdate;
     }
 
     public function ReadAllDevices()
@@ -148,6 +314,17 @@ class SolarDataCollectorService
 
             $this->mothlyYieldRepository->save($data, $device);          
         }
+    }
+
+    private function fetchDataFile($filePath)
+    {
+        $file = fopen($filePath, "r") or die("Unable to open file!");
+        $fileData = fread($file,filesize($filePath));
+        fclose($file);
+
+        $data = json_decode($fileData, true);
+
+        return $data;
     }
 
     private $connections = 0;

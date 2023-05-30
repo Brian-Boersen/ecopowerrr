@@ -78,8 +78,8 @@ class CustomerRegistrationService
             {
                 $customerData = 
                 [
-                    'firstName' => 'generate',
-                    'lastName' => 'generate',
+                    'firstName' => 'jhon',
+                    'lastName' => 'doe',
 
                     'email' => 'fake@mail.com',
                     'phonenumber' => '1234',
@@ -91,11 +91,11 @@ class CustomerRegistrationService
 
                     'postcode' => $LLData->getPc6(),
 
-                    'street' => 'generate',
+                    'street' => '',
                     'houseNumber' => rand(1,9999),
-                    'city' => 'generate',
-                    'province' => 'generate',
-                    'municipality' => 'generate',
+                    'city' => '',
+                    'province' => '',
+                    'municipality' => '',
                     'bankAccount' => 'Rabo 1234',
                     'lat' => $LLData->getLat(),
                     'long' => $LLData->getLng()
@@ -116,7 +116,7 @@ class CustomerRegistrationService
         $data['postcode'] = strtolower(str_replace(' ', '', $data['postcode']));
         $data['houseNumber'] = intval($data['houseNumber']);
 
-        $result = $this->cs->clientConnect($data);
+        $result = $this->cs->clientConnect($data,true);
 
         return ($result);
     } 
