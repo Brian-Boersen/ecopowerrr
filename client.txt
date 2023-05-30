@@ -8,13 +8,13 @@ Array
     [contractEndDate] => 01/09/2023
     [buyPrice] => 143
     [sellPrice] => 17
-    [postcode] => 1422dr
+    [postcode] => 6031rk
     [street] => 
-    [houseNumber] => 9534
+    [houseNumber] => 4670
     [city] => 
     [province] => 
     [municipality] => 
     [bankAccount] => Rabo 1234
-    [lat] => 52.24427850
-    [long] => 4.84152300
+    [lat] => 51.27678820
+    [long] => 5.75204970
 )

@@ -43,9 +43,9 @@ class TestRepoCommand extends Command
         $retext = "";
 
         //dont forget to uncomment storing in the db
-        $datas = $this->solarDataService->ReadAllMultiple();
+        $datas = $this->solarDataService->ReadAllMultiple(51);
 
-        (is_array($datas) == true) ?$retext .= "\n count: " . count($datas). "\n":"";
+        // (is_array($datas) == true) ?$retext .= "\n count: " . count($datas). "\n":"";
        
         if($datas == null)
         {

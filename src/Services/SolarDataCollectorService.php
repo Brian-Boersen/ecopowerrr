@@ -135,75 +135,91 @@ class SolarDataCollectorService
         $this->mothlyYieldRepository->save($newForgedData, $newDevice);
     }
 
-    // public function reducePanels($data)
-    // {
-    //     $newData = [];
-
-    //     $addNew = true;
-
-    //     foreach($data as $newDevice)
-    //     {
-    //         foreach($newData as $device)
-    //         {
-    //             if($device['device_id'] == $newDevice['device_id'])
-    //             {
-    //                 $addNew = false;
-    //             }
-    //         }
-
-    //         if($addNew == true)
-    //         {
-    //             $newData[] = $newDevice;
-    //         }
-
-    //         $addNew = true;
-    //     }
-
-    //     return $newData;
-    // }
-
-    public function ReadAllMultiple()
+    public function reducePanels($data)
     {
-        $Devices = $this->devicesRepository->findAll(); 
+        $newData = [];
 
+        $addNew = true;
+
+        foreach($data as $newDevice)
+        {
+            foreach($newData as $device)
+            {
+                if($device['device_id'] == $newDevice['device_id'])
+                {
+                    $addNew = false;
+                }
+            }
+
+            if($addNew == true)
+            {
+                $newData[] = $newDevice;
+            }
+
+            $addNew = true;
+        }
+
+        return $newData;
+    }
+
+    private function removeDoneDevices($data, $until)
+    {
+        foreach($data as $key => $device)
+        {
+            if($device->getId() > $until)
+            {
+                break;
+            }
+            
+            print_r("\n removing device with id: ".$device->getId());
+            unset($data[$key]);
+        }
+
+        return $data;
+    }
+
+    public function ReadAllMultiple($from = 0)
+    {
+        print_r("\n " . ini_get('memory_limit') . " \n");
+        
+        $Devices = $this->devicesRepository->findAll(); 
+        
+        $Devices = $this->removeDoneDevices($Devices, $from);
+        
         $GetheredData = [];
         
-        $data = $this->FakeDeviceData;
+        // $data = $this->FakeDeviceData;
         
-        $lastDevice = end($Devices)->getSerialNumber();
-        $devicesCount = count($Devices);
+       // $lastDevice = end($Devices)->getSerialNumber();
+        // $devicesCount = count($Devices);
         $devicesAdded = 0;
 
         //dont put higher than 100 or it will exaust the memory
         $flushAfter = 10;
 
         $flush = false;
+
+        $first = true;
         
         foreach($Devices as $device)
         {
             print_r("\n". $device->getId());
 
-            $panels = $this->mothlyYieldRepository->findBy(['device' => $device->getId()]);
-
-            if(count($panels) > 0)
+            $panels = $this->mothlyYieldRepository->fetchByDevice($device);
+         
+            if(count($panels) == 0)
             {
-                print_r("\n paneles not found");
-                die();
-            }
-
-            array_filter($panels, "self::reducePanels");
-
-            if(count($panels) > 0)
-            {
-                print_r("\n paneles not filterd");
-                die();
+                print_r("\n panels not found for:" . $device->getId());
+                continue;
             }
 
             $flush = false;
+            $first = true;
 
             $SN = $device->getSerialNumber();
 
             $devicesAdded++;
+
             
             if($devicesAdded >= $flushAfter)//$SN == $lastDevice)
             {
@@ -211,31 +227,20 @@ class SolarDataCollectorService
                 $devicesAdded = 0;
                 print_r("\n flushing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             }
-
-            $deviceData = $data[array_search($SN, array_column($data, 'device_id'))];
-            
-            if($deviceData == null)
-            {
-                continue;
-            }
-
-            print_r("\n". $deviceData['device_id']);
             
             while($this->reachedEnd == false)
             {    
-                $GetheredData[] = $deviceData;
-                
                 $newForgedData = 
                     [
                         "device_status" => "active",
                         "date" => $this->iterateDate(1),
 
                         "device_id" => $SN,
-                        "type" => $device['type']
+                        "type" => $device->getType()
                     ];
                         
 
-                foreach($deviceData['devices'] as $panel)
+                foreach($panels as $panel)
                 {
                     $totalYield = rand(100000,1000000) / 100;
                     $totalSurplus = rand(100000,$totalYield) / 100;
@@ -244,7 +249,7 @@ class SolarDataCollectorService
 
                     $newForgedData['devices'][] = 
                     [
-                        "serial_number" => $panel['serial_number'],
+                        "serial_number" => $panel->getSerialNumber(),
                         "device_type" => "solar",
                         "device_status" => "active",
                         "device_total_yield" =>$totalYield ."kWh",
@@ -258,15 +263,18 @@ class SolarDataCollectorService
 
                 if($this->reachedEnd == true && $flush == true)
                 {
-                    $this->mothlyYieldRepository->save($newForgedData, $device, false);      
+                    $this->mothlyYieldRepository->save($newForgedData, $device, false, $first);   
                 }
                 else
                 {
-                    $this->mothlyYieldRepository->save($newForgedData, $device, $flush);      
+                    $this->mothlyYieldRepository->save($newForgedData, $device, $flush, $first);      
                 }
+
 
                 $this->addedDevices++;
                 // print_r("\n date: ". $newForgedData['date']);
+
+                $first = false;
             }  
             
             $this->completedDevices++;
@@ -276,7 +284,7 @@ class SolarDataCollectorService
             print_r("\n". $this->completedDevices .") added device with id: ".$SN);
         }
 
-        return $GetheredData;
+        return;
     }
 
     private function iterateDate($months,$resetDate = "20130501")

@@ -29,6 +29,11 @@ class MothlyYieldRepository extends ServiceEntityRepository
         parent::__construct($registry, MothlyYield::class);
     }
 
+    public function fetchByDevice(Devices $device): array
+    {
+        return $this->findBy(['device' => $device]);
+    }
+
     public function save(array $data,Devices $dev, bool $flush = true , bool $first = true)
     {
         $splitDate = explode("/", $data['date']);
@@ -46,24 +51,40 @@ class MothlyYieldRepository extends ServiceEntityRepository
 
         if($first == true)
         {
-            $this->devicesMonthlyYield = $this->findBy(['device' => $dev->getId()]);
+            print_r("\n first device id: " . $dev->getId() . "\n");
+
+            $this->devicesMonthlyYield = [];
+
+            // $panels = $this->findBy(['device' => $dev]);
+
+            // foreach($panels as $panel)
+            // {
+            //     $this->devicesMonthlyYield = [$panel->getSerialNumber(), $panel->getStartDate()];
+            // }
         }
-
+        
+        
         $skip = false;
-
+        
         foreach($data['devices'] as $device)
         {
+            
             if($deviceDate->format('ym') <= $thisYear->format('ym'))
             {
-                $this->quarterYieldRepository->save($dev, $device, $deviceDate, $thisYear, $flush);
+                $this->quarterYieldRepository->save($dev, $device, $deviceDate, $thisYear, $flush, $first);
                 continue;
             }
-
+            
             $keys = array_keys($this->devicesMonthlyYield, $device['serial_number']);
 
+            if($first == false || $this->devicesMonthlyYield == null)
+            {
+                $this->devicesMonthlyYield[] = [$device['serial_number'], $deviceDate];
+            }
+            
             foreach($keys as $key)
             {
-                if((int)$this->devicesMonthlyYield[$key]->getStartDate()->format('ymd') == (int)$deviceDate->format('ymd'))
+                if((int)$this->devicesMonthlyYield[$key][1] == (int)$deviceDate->format('ymd'))
                 {
                     $skip = true;
                     break;

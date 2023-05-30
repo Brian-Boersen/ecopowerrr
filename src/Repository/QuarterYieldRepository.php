@@ -19,12 +19,15 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class QuarterYieldRepository extends ServiceEntityRepository
 {
+    private $devicesMonthlyYield = [];
+
+
     public function __construct(ManagerRegistry $registry, private YearlyYieldRepository $yearlyYieldRepository)
     {
         parent::__construct($registry, QuarterYield::class);
     }
 
-    public function save($device,$yield,$startDate,$lastYear, bool $flush = false): void
+    public function save($device,$yield,$startDate,$lastYear, bool $flush = false, bool $first = false): void
     {
         $floorYear = new \DateTime($lastYear->format('Y-m-d'));
         $floorYear->modify('-1 year');
@@ -34,8 +37,28 @@ class QuarterYieldRepository extends ServiceEntityRepository
             $this->yearlyYieldRepository->save($device,$yield,$startDate,$floorYear,$flush);
             return;
         }
-        
+
         $devicesQuarterlyYield = $this->findBy(['serial_number' => $yield['serial_number']]);
+
+        // if($first == true)
+        // {
+        //     $this->devicesMonthlyYield = [];
+        // }
+        
+        // $keys = array_keys($this->devicesMonthlyYield, $yield['serial_number']);
+
+        // if($first == false || $this->devicesMonthlyYield == null)
+        // {
+        //     $this->devicesMonthlyYield[] = [$yield['serial_number'], $startDate->format('ymd')];
+        // }
+        
+        // foreach($keys as $key)
+        // {
+        //     if((int)$this->devicesMonthlyYield[$key][1] == (int)$startDate->format('ymd'))
+        //     {
+                
+        //     }
+        // } 
 
         if($devicesQuarterlyYield != null)
         {
